@@ -1,0 +1,9 @@
+{
+  "cm_per_pixel": 2.0,
+  "mask_shape": [
+    128,
+    128,
+    1
+  ],
+  "fabric_width_cm": 150
+}
