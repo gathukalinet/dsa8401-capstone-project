@@ -12,10 +12,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from tensorflow import keras
 
-from src.features.preprocess import ARTIFACT_DIR, load_splits, to_pct
+import json
+from src.features.preprocess import ARTIFACT_DIR, PROCESSED_DIR, load_splits, to_pct
 from src.train import REPORT_DIR, inputs_for
 
-ORDER = ["mean_baseline", "coverage_linreg", "mlp_only", "cnn_only", "fusion"]
+ORDER = ["mean_baseline", "coverage_linreg", "formula_linreg", "mlp_only", "cnn_only", "fusion"]
 
 
 def metrics(y_true, y_pred):
@@ -31,6 +32,14 @@ def coverage(split):
     return split["mask"].mean(axis=(1, 2, 3)).reshape(-1, 1)
 
 
+def formula_feature(split, scale, width):
+    """Utilization (%) computed directly from the mask: area / (width x last filled row)."""
+    m = split["mask"][..., 0]
+    area = m.reshape(len(m), -1).sum(axis=1) * scale ** 2
+    last_row = np.array([np.where(x.any(axis=1))[0].max() + 1 for x in m])
+    return (100 * area / (width * last_row * scale)).reshape(-1, 1)
+
+
 def main():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     splits, prep = load_splits()
@@ -42,9 +51,17 @@ def main():
         # baseline 1: always predict the training mean
         preds["mean_baseline"][sp] = np.full(len(s["y_pct"]), train["y_pct"].mean())
         # baseline 2: linear regression on mean pixel coverage only
-    lr = LinearRegression().fit(coverage(train), train["y_pct"])
-    for sp in ["val", "test"]:
-        preds["coverage_linreg"][sp] = lr.predict(coverage(splits[sp]))
+        lr = LinearRegression().fit(coverage(train), train["y_pct"])
+        for sp in ["val", "test"]:
+            preds["coverage_linreg"][sp] = lr.predict(coverage(splits[sp]))
+
+        # baseline 3: formula computed from the mask, linearly calibrated on train
+        with open(PROCESSED_DIR / "meta.json") as f:
+            meta = json.load(f)
+        scale, width = meta["cm_per_pixel"], meta["fabric_width_cm"]
+        lr2 = LinearRegression().fit(formula_feature(train, scale, width), train["y_pct"])
+        for sp in ["val", "test"]:
+            preds["formula_linreg"][sp] = lr2.predict(formula_feature(splits[sp], scale, width))
     # neural models
     for name in ["mlp_only", "cnn_only", "fusion"]:
         model = keras.models.load_model(ARTIFACT_DIR / f"{name}.keras")
