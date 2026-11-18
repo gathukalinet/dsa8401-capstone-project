@@ -1,0 +1,26 @@
+seed: 42
+
+data:
+  n_garments: 100
+  layouts_per_garment: 5
+  pieces_per_garment: 12
+  sizes: [XS, S, M, L, XL, XXL]
+
+fabric:
+  width_cm: 150
+  gap_cm: 1.0
+  allow_rotation: true        # 180-degree flips only, keeps grain direction
+  cm_per_pixel: 2.0           # PROVISIONAL, confirm after running layout.py
+
+noise:
+  measurement_sd_cm: 1.0
+  missing_rate: 0.03
+
+split:
+  test_size: 0.2
+  val_size: 0.1
+
+paths:
+  raw: data/raw
+  processed: data/processed
+  artifacts: artifacts
