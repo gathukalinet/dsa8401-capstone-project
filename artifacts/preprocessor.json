@@ -1,0 +1,9 @@
+{
+  "medians": {
+    "waist_circ": 84.1,
+    "hip_circ": 107.9,
+    "total_length": 98.0
+  },
+  "y_mean": 48.28565917307357,
+  "y_std": 8.64819294572688
+}
