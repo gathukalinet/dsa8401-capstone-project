@@ -272,8 +272,44 @@ def export_fitted_annotated_svg(polygon, filepath, sample_id, size_lbl, piece_na
 # ==========================================
 # 4. MASTER BATCH GENERATION ENGINE
 # ==========================================
+def build_garment_pieces(row):
+    """Return the 12 (polygon, NAME) pairs for one CSV row."""
+    waist = row['waist_circ']
+    hip = row['hip_circ']
+    w2h = row['waist_to_hip']
+    length = row['total_length']
+    crotch_depth = length - 25.0
+    inseam = crotch_depth
+
+    front_left = generate_front_panel(waist, hip, w2h, length, inseam)
+    front_right = generate_front_panel(waist, hip, w2h, length, inseam)
+    back_left = generate_back_panel(waist, hip, w2h, length, inseam)
+    back_right = generate_back_panel(waist, hip, w2h, length, inseam)
+    waistband = generate_waistband_panel(waist)
+    fly_facing, fly_shield, fly_guard = generate_fly_assembly(crotch_depth)
+    pocket_facing_l, pocket_inner_l = generate_pocket_assembly(hip, w2h)
+    pocket_facing_r, pocket_inner_r = generate_pocket_assembly(hip, w2h)
+
+    garment_pieces = [
+        (front_left, "FRONT_LEFT"),
+        (front_right, "FRONT_RIGHT"),
+        (back_left, "BACK_LEFT"),
+        (back_right, "BACK_RIGHT"),
+        (waistband, "WAISTBAND"),
+        (fly_facing, "FLY_FACING"),
+        (fly_shield, "FLY_SHIELD"),
+        (fly_guard, "FLY_GUARD"),
+        (pocket_facing_l, "POCKET_FACING_LEFT"),
+        (pocket_inner_l, "POCKET_INNER_LEFT"),
+        (pocket_facing_r, "POCKET_FACING_RIGHT"),
+        (pocket_inner_r, "POCKET_INNER_RIGHT"),
+    ]
+
+    for poly, name in garment_pieces:
+        assert poly.is_valid and poly.area > 0, f"{row['sample_id']} {name} invalid"
+    return garment_pieces
+
 def main():
-    print(ROOT)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
 
     create_sized_csv(CSV_PATH)
@@ -283,37 +319,8 @@ def main():
     for idx, row in df.iterrows():
         sample_id = row['sample_id']
         size_lbl = row['size_label']
-        waist = row['waist_circ']
-        hip = row['hip_circ']
-        w2h = row['waist_to_hip']
-        length = row['total_length']
-        crotch_depth = length - 25.0
-        inseam = crotch_depth
 
-        # Generate Geometries
-        front_left = generate_front_panel(waist, hip, w2h, length, inseam)
-        front_right = generate_front_panel(waist, hip, w2h, length, inseam)
-        back_left = generate_back_panel(waist, hip, w2h, length, inseam)
-        back_right = generate_back_panel(waist, hip, w2h, length, inseam)
-        waistband = generate_waistband_panel(waist)
-        fly_facing, fly_shield, fly_guard = generate_fly_assembly(crotch_depth)
-        pocket_facing_l, pocket_inner_l = generate_pocket_assembly(hip, w2h)
-        pocket_facing_r, pocket_inner_r = generate_pocket_assembly(hip, w2h)
-
-        garment_pieces = [
-            (front_left, "FRONT_LEFT"),
-            (front_right, "FRONT_RIGHT"),
-            (back_left, "BACK_LEFT"),
-            (back_right, "BACK_RIGHT"),
-            (waistband, "WAISTBAND"),
-            (fly_facing, "FLY_FACING"),
-            (fly_shield, "FLY_SHIELD"),
-            (fly_guard, "FLY_GUARD"),
-            (pocket_facing_l, "POCKET_FACING_LEFT"),
-            (pocket_inner_l, "POCKET_INNER_LEFT"),
-            (pocket_facing_r, "POCKET_FACING_RIGHT"),
-            (pocket_inner_r, "POCKET_INNER_RIGHT"),
-        ]
+        garment_pieces = build_garment_pieces(row)
 
         sample_dir = os.path.join(PATTERN_DIR, f"Size_{size_lbl}", sample_id)
         os.makedirs(sample_dir, exist_ok=True)
