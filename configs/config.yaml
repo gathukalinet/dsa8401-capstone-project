@@ -10,7 +10,7 @@ fabric:
   width_cm: 150
   gap_cm: 1.0
   allow_rotation: true        # 180-degree flips only, keeps grain direction
-  cm_per_pixel: 2.0           # PROVISIONAL, confirm after running layout.py
+  cm_per_pixel: 2.1           # PROVISIONAL, confirm after running layout.py
 
 noise:
   measurement_sd_cm: 1.0
@@ -24,3 +24,9 @@ paths:
   raw: data/raw
   processed: data/processed
   artifacts: artifacts
+
+train:
+  epochs: 80
+  patience: 30
+  batch_size: 32
+  lr: 0.001
