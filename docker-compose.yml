@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: "3.13"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
